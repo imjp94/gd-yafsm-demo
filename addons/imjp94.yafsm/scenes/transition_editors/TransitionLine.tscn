@@ -1,0 +1,25 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://addons/imjp94.yafsm/scenes/flowchart/FlowChartLine.tscn" type="PackedScene" id=1]
+[ext_resource path="res://addons/imjp94.yafsm/scenes/transition_editors/TransitionLine.gd" type="Script" id=2]
+
+[node name="TransitionLine" instance=ExtResource( 1 )]
+script = ExtResource( 2 )
+
+[node name="MarginContainer" type="MarginContainer" parent="." index="0"]
+margin_left = -47.5
+margin_top = -46.0
+margin_right = 47.5
+rect_pivot_offset = Vector2( 0, 2.5 )
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="MarginContainer" index="0"]
+margin_left = 16.0
+margin_top = 16.0
+margin_right = 79.0
+margin_bottom = 30.0
+rect_pivot_offset = Vector2( 0, 2.5 )
+size_flags_horizontal = 6
+size_flags_vertical = 6
+text = "Transition"
+align = 1

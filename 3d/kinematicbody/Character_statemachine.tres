@@ -1,0 +1,244 @@
+[gd_resource type="Resource" load_steps=37 format=2]
+
+[ext_resource path="res://addons/imjp94.yafsm/src/states/StateMachine.gd" type="Script" id=1]
+[ext_resource path="res://addons/imjp94.yafsm/src/transitions/Transition.gd" type="Script" id=2]
+[ext_resource path="res://addons/imjp94.yafsm/src/conditions/Condition.gd" type="Script" id=3]
+[ext_resource path="res://addons/imjp94.yafsm/src/conditions/BooleanCondition.gd" type="Script" id=4]
+[ext_resource path="res://addons/imjp94.yafsm/src/conditions/IntegerCondition.gd" type="Script" id=5]
+[ext_resource path="res://addons/imjp94.yafsm/src/conditions/FloatCondition.gd" type="Script" id=6]
+[ext_resource path="res://addons/imjp94.yafsm/src/states/State.gd" type="Script" id=7]
+
+[sub_resource type="Resource" id=1]
+script = ExtResource( 7 )
+__meta__ = {
+"graph_offset": Vector2( -60, -20 )
+}
+name = "Entry"
+
+[sub_resource type="Resource" id=2]
+script = ExtResource( 7 )
+__meta__ = {
+"graph_offset": Vector2( 240, 120 )
+}
+name = "Fall"
+
+[sub_resource type="Resource" id=3]
+script = ExtResource( 7 )
+__meta__ = {
+"graph_offset": Vector2( 80, -20 )
+}
+name = "Idle"
+
+[sub_resource type="Resource" id=4]
+script = ExtResource( 7 )
+__meta__ = {
+"graph_offset": Vector2( 400, -20 )
+}
+name = "Jump"
+
+[sub_resource type="Resource" id=5]
+script = ExtResource( 7 )
+__meta__ = {
+"graph_offset": Vector2( 480, 120 )
+}
+name = "Jump(n)"
+
+[sub_resource type="Resource" id=6]
+script = ExtResource( 7 )
+__meta__ = {
+"graph_offset": Vector2( 240, -140 )
+}
+name = "Walk"
+
+[sub_resource type="Resource" id=7]
+script = ExtResource( 2 )
+from = "Entry"
+to = "Idle"
+conditions = {
+
+}
+
+[sub_resource type="Resource" id=8]
+script = ExtResource( 5 )
+name = "jump_count"
+comparation = 3
+value = 2
+
+[sub_resource type="Resource" id=9]
+script = ExtResource( 5 )
+name = "jump_elapsed"
+comparation = 5
+value = 2000
+
+[sub_resource type="Resource" id=10]
+script = ExtResource( 3 )
+name = "space"
+
+[sub_resource type="Resource" id=11]
+script = ExtResource( 2 )
+from = "Fall"
+to = "Jump(n)"
+conditions = {
+"jump_count": SubResource( 8 ),
+"jump_elapsed": SubResource( 9 ),
+"space": SubResource( 10 )
+}
+
+[sub_resource type="Resource" id=12]
+script = ExtResource( 4 )
+name = "on_floor"
+comparation = 0
+value = true
+
+[sub_resource type="Resource" id=13]
+script = ExtResource( 2 )
+from = "Fall"
+to = "Idle"
+conditions = {
+"on_floor": SubResource( 12 )
+}
+
+[sub_resource type="Resource" id=14]
+script = ExtResource( 5 )
+name = "jump_count"
+comparation = 3
+value = 2
+
+[sub_resource type="Resource" id=15]
+script = ExtResource( 5 )
+name = "jump_elapsed"
+comparation = 5
+value = 200
+
+[sub_resource type="Resource" id=16]
+script = ExtResource( 3 )
+name = "space"
+
+[sub_resource type="Resource" id=17]
+script = ExtResource( 2 )
+from = "Fall"
+to = "Jump(n)"
+conditions = {
+"jump_count": SubResource( 14 ),
+"jump_elapsed": SubResource( 15 ),
+"space": SubResource( 16 )
+}
+
+[sub_resource type="Resource" id=18]
+script = ExtResource( 4 )
+name = "on_floor"
+comparation = 0
+value = false
+
+[sub_resource type="Resource" id=19]
+script = ExtResource( 2 )
+from = "Idle"
+to = "Fall"
+conditions = {
+"on_floor": SubResource( 18 )
+}
+
+[sub_resource type="Resource" id=20]
+script = ExtResource( 3 )
+name = "space"
+
+[sub_resource type="Resource" id=21]
+script = ExtResource( 2 )
+from = "Idle"
+to = "Jump"
+conditions = {
+"space": SubResource( 20 )
+}
+
+[sub_resource type="Resource" id=22]
+script = ExtResource( 6 )
+name = "walk"
+comparation = 2
+value = 0.0
+
+[sub_resource type="Resource" id=23]
+script = ExtResource( 2 )
+from = "Idle"
+to = "Walk"
+conditions = {
+"walk": SubResource( 22 )
+}
+
+[sub_resource type="Resource" id=24]
+script = ExtResource( 2 )
+from = "Jump"
+to = "Fall"
+conditions = {
+
+}
+
+[sub_resource type="Resource" id=25]
+script = ExtResource( 2 )
+from = "Jump(n)"
+to = "Fall"
+conditions = {
+
+}
+
+[sub_resource type="Resource" id=26]
+script = ExtResource( 6 )
+name = "walk"
+comparation = 5
+value = 0.0
+
+[sub_resource type="Resource" id=27]
+script = ExtResource( 2 )
+from = "Walk"
+to = "Idle"
+conditions = {
+"walk": SubResource( 26 )
+}
+
+[sub_resource type="Resource" id=28]
+script = ExtResource( 3 )
+name = "space"
+
+[sub_resource type="Resource" id=29]
+script = ExtResource( 2 )
+from = "Walk"
+to = "Jump"
+conditions = {
+"space": SubResource( 28 )
+}
+
+[resource]
+script = ExtResource( 1 )
+name = ""
+states = {
+"Entry": SubResource( 1 ),
+"Fall": SubResource( 2 ),
+"Idle": SubResource( 3 ),
+"Jump": SubResource( 4 ),
+"Jump(n)": SubResource( 5 ),
+"Walk": SubResource( 6 )
+}
+transitions = {
+"Entry": {
+"Idle": SubResource( 7 )
+},
+"Fall": {
+"DoubleJump": SubResource( 11 ),
+"Idle": SubResource( 13 ),
+"Jump(n)": SubResource( 17 )
+},
+"Idle": {
+"Fall": SubResource( 19 ),
+"Jump": SubResource( 21 ),
+"Walk": SubResource( 23 )
+},
+"Jump": {
+"Fall": SubResource( 24 )
+},
+"Jump(n)": {
+"Fall": SubResource( 25 )
+},
+"Walk": {
+"Idle": SubResource( 27 ),
+"Jump": SubResource( 29 )
+}
+}
