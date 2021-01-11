@@ -19,6 +19,6 @@ config/name="YAFSM-demo"
 run/main_scene="res://Main.tscn"
 config/icon="res://icon.png"
 
-[rendering]
+[editor_plugins]
 
-environment/default_environment="res://default_env.tres"
+enabled=PoolStringArray( "imjp94.yafsm" )

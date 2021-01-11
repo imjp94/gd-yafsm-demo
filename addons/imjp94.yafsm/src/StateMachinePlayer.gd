@@ -3,8 +3,8 @@ extends "StackPlayer.gd"
 const State = preload("states/State.gd")
 
 signal transited(from, to) # Transition of state
-signal entered() # Entry of state machine
-signal exited() # Exit of state machine
+signal entered(to) # Entry of state machine(including nested), empty string equals to root
+signal exited(from) # Exit of state machine(including nested, empty string equals to root
 signal updated(state, delta) # Time to update(based on process_mode), up to user to handle any logic, for example, update movement of KinematicBody
 
 # Enum to define how state machine should be updated
@@ -20,6 +20,7 @@ export(bool) var autostart = true # Automatically enter Entry state on ready if 
 export(ProcessMode) var process_mode = ProcessMode.IDLE setget set_process_mode # ProcessMode of player
 
 var _parameters # Parameters to be passed to condition
+var _local_parameters
 var _is_update_locked = true
 var _was_transited = false # If last transition was successful
 var _is_param_edited = false
@@ -30,6 +31,7 @@ func _init():
 		return
 
 	_parameters = {}
+	_local_parameters = {}
 	_was_transited = true # Trigger _transit on _ready
 
 func _get_configuration_warning():
@@ -68,21 +70,6 @@ func _physics_process(delta):
 	update(delta)
 	_update_end()
 
-func _on_pushed(from, to):
-	_on_state_changed(from, to)
-
-func _on_popped(from, to):
-	_on_state_changed(from, to)
-
-func _on_state_changed(from, to):
-	match to:
-		State.ENTRY_KEY:
-			emit_signal("entered")
-		State.EXIT_KEY:
-			set_active(false) # Disable on exit
-			emit_signal("exited")
-	emit_signal("transited", from, to)
-
 # Only get called in 2 condition, _parameters edited or last transition was successful
 func _transit():
 	if not active:
@@ -91,15 +78,41 @@ func _transit():
 	if not _is_param_edited and not _was_transited:
 		return
 
-	var next_state = state_machine.transit(get_current(), _parameters)
+	var from = get_current()
+	var local_params = _local_parameters.get(path_backward(from), {})
+	var next_state = state_machine.transit(get_current(), _parameters, local_params)
 	if next_state:
 		if stack.has(next_state):
 			reset(stack.find(next_state))
 		else:
 			push(next_state)
+	var to = next_state
 	_was_transited = !!next_state
 	_is_param_edited = false
-	_flush_trigger()
+	_flush_trigger(_parameters)
+
+	if _was_transited:
+		_on_state_changed(from, to)
+
+func _on_state_changed(from, to):
+	match to:
+		State.ENTRY_STATE:
+			emit_signal("entered", "")
+		State.EXIT_STATE:
+			set_active(false) # Disable on exit
+			emit_signal("exited", "")
+	
+	if to.ends_with(State.ENTRY_STATE) and to.length() > State.ENTRY_STATE.length():
+		# Nexted Entry state
+		var state = path_backward(get_current())
+		emit_signal("entered", state)
+	elif to.ends_with(State.EXIT_STATE) and to.length() > State.EXIT_STATE.length():
+		# Nested Exit state, clear "local" params
+		var state = path_backward(get_current())
+		clear_param(state, false) # Clearing params internally, do not update
+		emit_signal("exited", state)
+
+	emit_signal("transited", from, to)
 
 # Called internally if process_mode is PHYSICS/IDLE to unlock update()
 func _update_start():
@@ -133,7 +146,7 @@ func _on_active_changed():
 		return
 
 	if active:
-		_flush_trigger()
+		_flush_trigger(_parameters)
 		_on_process_mode_changed()
 		_transit()
 	else:
@@ -141,11 +154,13 @@ func _on_active_changed():
 		set_process(false)
 
 # Remove all trigger(param with null value) in _parameters, only get called after _transit
-func _flush_trigger():
-	for param_key in _parameters.keys():
-		var value = _parameters[param_key]
+func _flush_trigger(params):
+	for param_key in params.keys():
+		var value = params[param_key]
+		if value is Dictionary: # TODO: Differentiate nested params from user defined dictionary
+			_flush_trigger(value)
 		if value == null: # Param with null as value is treated as trigger
-			_parameters.erase(param_key)
+			params.erase(param_key)
 
 func reset(to=-1, event=ResetEventTrigger.LAST_TO_DEST):
 	.reset(to, event)
@@ -153,7 +168,7 @@ func reset(to=-1, event=ResetEventTrigger.LAST_TO_DEST):
 
 # Manually start the player, automatically called if autostart is true
 func start():
-	push(State.ENTRY_KEY)
+	push(State.ENTRY_STATE)
 	_was_transited = true
 
 # Restart player
@@ -161,7 +176,7 @@ func restart(is_active=true, preserve_params=false):
 	reset()
 	set_active(is_active)
 	if not preserve_params:
-		clear_param()
+		clear_param(false)
 	start()
 
 # Update player to, first initiate transition, then call _on_updated, finally emit "update" signal, delta will be given based on process_mode.
@@ -184,50 +199,114 @@ func update(delta=get_physics_process_delta_time()):
 
 # Set trigger to be tested with condition, then trigger _transit on next update, 
 # automatically call update() if process_mode set to MANUAL and auto_update true
-func set_trigger(name, auto_update=false):
+# Nested trigger can be accessed through path "path/to/param_name", for example, "App/Game/is_playing"
+func set_trigger(name, auto_update=true):
 	set_param(name, null)
-	_on_param_edited(auto_update)
 
 # Set param(null value treated as trigger) to be tested with condition, then trigger _transit on next update, 
 # automatically call update() if process_mode set to MANUAL and auto_update true
-func set_param(name, value, auto_update=false):
-	_parameters[name] = value
+# Nested param can be accessed through path "path/to/param_name", for example, "App/Game/is_playing"
+func set_param(name, value, auto_update=true):
+	var path = ""
+	if "/" in name:
+		path = path_backward(name)
+		name = path_end_dir(name)
+	_set_param(path, name, value, auto_update)
+
+func _set_param(path, name, value, auto_update=true):
+	if path.empty():
+		_parameters[name] = value
+	else:
+		var local_params = _local_parameters.get(path)
+		if local_params is Dictionary:
+			local_params[name] = value
+		else:
+			local_params = {}
+			local_params[name] = value
+			_local_parameters[path] = local_params
 	_on_param_edited(auto_update)
 
 # Remove param, then trigger _transit on next update, 
 # automatically call update() if process_mode set to MANUAL and auto_update true
-func erase_param(name, auto_update=false):
-	var result = _parameters.erase(name)
+# Nested param can be accessed through path "path/to/param_name", for example, "App/Game/is_playing"
+func erase_param(name, auto_update=true):
+	var path = ""
+	if "/" in name:
+		path = path_backward(name)
+		name = path_end_dir(name)
+	return _erase_param(path, name, auto_update)
+
+func _erase_param(path, name, auto_update=true):
+	var result = false
+	if path.empty():
+		result = _parameters.erase(name)
+	else:
+		result = _local_parameters.get(path, {}).erase(name)
 	_on_param_edited(auto_update)
 	return result
 
-# Clear all param , then trigger _transit on next update, 
+# Clear params from specified path, empty string to clear all, then trigger _transit on next update, 
 # automatically call update() if process_mode set to MANUAL and auto_update true
-func clear_param(auto_update=false):
-	_parameters.clear()
-	_on_param_edited(auto_update)
+# Nested param can be accessed through path "path/to/param_name", for example, "App/Game/is_playing"
+func clear_param(path="", auto_update=true):
+	if path.empty():
+		_parameters.clear()
+	else:
+		_local_parameters.get(path, {}).clear()
+		# Clear nested params
+		for param_key in _local_parameters.keys():
+			if param_key.begins_with(path):
+				_local_parameters.erase(param_key)
 
 # Called when param edited, automatically call update() if process_mode set to MANUAL and auto_update true
-func _on_param_edited(auto_update=false):
+func _on_param_edited(auto_update=true):
 	_is_param_edited = true
 	if process_mode == ProcessMode.MANUAL and auto_update:
 		update()
 
 # Get value of param
+# Nested param can be accessed through path "path/to/param_name", for example, "App/Game/is_playing"
 func get_param(name, default=null):
-	return _parameters.get(name, default)
+	var path = ""
+	if "/" in name:
+		path = path_backward(name)
+		name = path_end_dir(name)
+	return _get_param(path, name, default)
+
+func _get_param(path, name, default=null):
+	if path.empty():
+		return _parameters.get(name, default)
+	else:
+		var local_params = _local_parameters.get(path, {})
+		return local_params.get(name, default)
 
 # Get duplicate of whole parameter dictionary
 func get_params():
 	return _parameters.duplicate()
 
+# Return true if param exists
+# Nested param can be accessed through path "path/to/param_name", for example, "App/Game/is_playing"
+func has_param(name):
+	var path = ""
+	if "/" in name:
+		path = path_backward(name)
+		name = path_end_dir(name)
+	return _has_param(path, name)
+
+func _has_param(path, name):
+	if path.empty():
+		return name in _parameters
+	else:
+		var local_params = _local_parameters.get(path, {})
+		return name in local_params
+
 # Return if player started
 func is_entered():
-	return State.ENTRY_KEY in stack
+	return State.ENTRY_STATE in stack
 
 # Return if player ended
 func is_exited():
-	return get_current() == State.EXIT_KEY
+	return get_current() == State.EXIT_STATE
 
 func set_active(v):
 	if active != v:
@@ -250,3 +329,29 @@ func get_current():
 func get_previous():
 	var v = .get_previous()
 	return v if v else ""
+
+# Convert node path to state path that can be used to query state with StateMachine.get_state.
+# Node path, "root/path/to/state", equals to State path, "path/to/state"
+static func node_path_to_state_path(node_path):
+	var p = node_path.replace("root", "")
+	if p.begins_with("/"):
+		p = p.substr(1)
+	return p
+
+# Convert state path to node path that can be used for query node in scene tree.
+# State path, "path/to/state", equals to Node path, "root/path/to/state"
+static func state_path_to_node_path(state_path):
+	var path = state_path
+	if path.empty():
+		path = "root"
+	else:
+		path = str("root/", path)
+	return path
+
+# Return parent path, "path/to/state" return "path/to"
+static func path_backward(path):
+	return path.substr(0, path.rfind("/"))
+
+# Return end directory of path, "path/to/state" returns "state"
+static func path_end_dir(path):
+	return path.right(path.rfind("/") + 1)

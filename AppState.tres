@@ -1,0 +1,435 @@
+[gd_resource type="Resource" load_steps=59 format=2]
+
+[ext_resource path="res://addons/imjp94.yafsm/src/states/StateMachine.gd" type="Script" id=1]
+[ext_resource path="res://addons/imjp94.yafsm/src/states/State.gd" type="Script" id=2]
+[ext_resource path="res://addons/imjp94.yafsm/src/transitions/Transition.gd" type="Script" id=3]
+[ext_resource path="res://addons/imjp94.yafsm/src/conditions/Condition.gd" type="Script" id=4]
+[ext_resource path="res://addons/imjp94.yafsm/src/conditions/BooleanCondition.gd" type="Script" id=5]
+
+[sub_resource type="Resource" id=1]
+script = ExtResource( 2 )
+__meta__ = {
+"graph_offset": Vector2( 0, 60 )
+}
+name = "Entry"
+
+[sub_resource type="Resource" id=2]
+script = ExtResource( 2 )
+__meta__ = {
+"graph_offset": Vector2( 240, 60 )
+}
+name = "Exit"
+
+[sub_resource type="Resource" id=3]
+script = ExtResource( 2 )
+__meta__ = {
+"graph_offset": Vector2( 80, -20 )
+}
+name = "Entry"
+
+[sub_resource type="Resource" id=4]
+script = ExtResource( 2 )
+__meta__ = {
+"graph_offset": Vector2( 440, -20 )
+}
+name = "Exit"
+
+[sub_resource type="Resource" id=5]
+script = ExtResource( 2 )
+__meta__ = {
+"graph_offset": Vector2( 240, 40 )
+}
+name = "GameOver"
+
+[sub_resource type="Resource" id=6]
+script = ExtResource( 2 )
+__meta__ = {
+"graph_offset": Vector2( 260, -80 )
+}
+name = "Victory"
+
+[sub_resource type="Resource" id=7]
+script = ExtResource( 5 )
+name = "win"
+comparation = 0
+value = false
+
+[sub_resource type="Resource" id=8]
+script = ExtResource( 3 )
+from = "Entry"
+to = "GameOver"
+conditions = {
+"win": SubResource( 7 )
+}
+
+[sub_resource type="Resource" id=9]
+script = ExtResource( 5 )
+name = "win"
+comparation = 0
+value = true
+
+[sub_resource type="Resource" id=10]
+script = ExtResource( 3 )
+from = "Entry"
+to = "Victory"
+conditions = {
+"win": SubResource( 9 )
+}
+
+[sub_resource type="Resource" id=11]
+script = ExtResource( 4 )
+name = "continue"
+
+[sub_resource type="Resource" id=12]
+script = ExtResource( 3 )
+from = "GameOver"
+to = "Exit"
+conditions = {
+"continue": SubResource( 11 )
+}
+
+[sub_resource type="Resource" id=13]
+script = ExtResource( 4 )
+name = "continue"
+
+[sub_resource type="Resource" id=14]
+script = ExtResource( 3 )
+from = "Victory"
+to = "Exit"
+conditions = {
+"continue": SubResource( 13 )
+}
+
+[sub_resource type="Resource" id=15]
+script = ExtResource( 1 )
+__meta__ = {
+"graph_offset": Vector2( 360, -80 )
+}
+name = "End"
+states = {
+"Entry": SubResource( 3 ),
+"Exit": SubResource( 4 ),
+"GameOver": SubResource( 5 ),
+"Victory": SubResource( 6 )
+}
+transitions = {
+"Entry": {
+"GameOver": SubResource( 8 ),
+"Victory": SubResource( 10 )
+},
+"GameOver": {
+"Exit": SubResource( 12 )
+},
+"Victory": {
+"Exit": SubResource( 14 )
+}
+}
+
+[sub_resource type="Resource" id=16]
+script = ExtResource( 2 )
+__meta__ = {
+"graph_offset": Vector2( 20, 0 )
+}
+name = "Entry"
+
+[sub_resource type="Resource" id=17]
+script = ExtResource( 2 )
+__meta__ = {
+"graph_offset": Vector2( 480, 0 )
+}
+name = "Exit"
+
+[sub_resource type="Resource" id=18]
+script = ExtResource( 2 )
+__meta__ = {
+"graph_offset": Vector2( 120, 0 )
+}
+name = "Load"
+
+[sub_resource type="Resource" id=19]
+script = ExtResource( 2 )
+__meta__ = {
+"graph_offset": Vector2( 360, 120 )
+}
+name = "Pause"
+
+[sub_resource type="Resource" id=20]
+script = ExtResource( 2 )
+__meta__ = {
+"graph_offset": Vector2( 240, 0 )
+}
+name = "Play"
+
+[sub_resource type="Resource" id=21]
+script = ExtResource( 3 )
+from = "End"
+to = "Exit"
+conditions = {
+
+}
+
+[sub_resource type="Resource" id=22]
+script = ExtResource( 3 )
+from = "Entry"
+to = "Load"
+conditions = {
+
+}
+
+[sub_resource type="Resource" id=23]
+script = ExtResource( 4 )
+name = "load_done"
+
+[sub_resource type="Resource" id=24]
+script = ExtResource( 3 )
+from = "Load"
+to = "Play"
+conditions = {
+"load_done": SubResource( 23 )
+}
+
+[sub_resource type="Resource" id=25]
+script = ExtResource( 4 )
+name = "quit"
+
+[sub_resource type="Resource" id=26]
+script = ExtResource( 3 )
+from = "Pause"
+to = "Exit"
+conditions = {
+"quit": SubResource( 25 )
+}
+
+[sub_resource type="Resource" id=27]
+script = ExtResource( 4 )
+name = "continue"
+
+[sub_resource type="Resource" id=28]
+script = ExtResource( 3 )
+from = "Pause"
+to = "Play"
+conditions = {
+"continue": SubResource( 27 )
+}
+
+[sub_resource type="Resource" id=29]
+script = ExtResource( 4 )
+name = "game_end"
+
+[sub_resource type="Resource" id=30]
+script = ExtResource( 3 )
+from = "Play"
+to = "End"
+conditions = {
+"game_end": SubResource( 29 )
+}
+
+[sub_resource type="Resource" id=31]
+script = ExtResource( 4 )
+name = "quit"
+
+[sub_resource type="Resource" id=32]
+script = ExtResource( 3 )
+from = "Play"
+to = "Exit"
+conditions = {
+"quit": SubResource( 31 )
+}
+
+[sub_resource type="Resource" id=33]
+script = ExtResource( 4 )
+name = "pause"
+
+[sub_resource type="Resource" id=34]
+script = ExtResource( 3 )
+from = "Play"
+to = "Pause"
+conditions = {
+"pause": SubResource( 33 )
+}
+
+[sub_resource type="Resource" id=35]
+script = ExtResource( 1 )
+__meta__ = {
+"graph_offset": Vector2( 540, -80 )
+}
+name = "Game"
+states = {
+"End": SubResource( 15 ),
+"Entry": SubResource( 16 ),
+"Exit": SubResource( 17 ),
+"Load": SubResource( 18 ),
+"Pause": SubResource( 19 ),
+"Play": SubResource( 20 )
+}
+transitions = {
+"End": {
+"Exit": SubResource( 21 )
+},
+"Entry": {
+"Load": SubResource( 22 )
+},
+"Load": {
+"Play": SubResource( 24 )
+},
+"Pause": {
+"Exit": SubResource( 26 ),
+"Play": SubResource( 28 )
+},
+"Play": {
+"End": SubResource( 30 ),
+"Exit": SubResource( 32 ),
+"Pause": SubResource( 34 )
+}
+}
+
+[sub_resource type="Resource" id=36]
+script = ExtResource( 2 )
+__meta__ = {
+"graph_offset": Vector2( 380, -180 )
+}
+name = "LevelSelect"
+
+[sub_resource type="Resource" id=37]
+script = ExtResource( 2 )
+__meta__ = {
+"graph_offset": Vector2( 240, -80 )
+}
+name = "MainMenu"
+
+[sub_resource type="Resource" id=38]
+script = ExtResource( 2 )
+__meta__ = {
+"graph_offset": Vector2( -100, -80 )
+}
+name = "SplashScreen"
+
+[sub_resource type="Resource" id=39]
+script = ExtResource( 2 )
+__meta__ = {
+"graph_offset": Vector2( 100, -80 )
+}
+name = "StartScreen"
+
+[sub_resource type="Resource" id=40]
+script = ExtResource( 3 )
+from = "Entry"
+to = "SplashScreen"
+conditions = {
+
+}
+
+[sub_resource type="Resource" id=41]
+script = ExtResource( 3 )
+from = "Game"
+to = "MainMenu"
+conditions = {
+
+}
+
+[sub_resource type="Resource" id=42]
+script = ExtResource( 4 )
+name = "level_selected"
+
+[sub_resource type="Resource" id=43]
+script = ExtResource( 3 )
+from = "LevelSelect"
+to = "Game"
+conditions = {
+"level_selected": SubResource( 42 )
+}
+
+[sub_resource type="Resource" id=44]
+script = ExtResource( 4 )
+name = "back"
+
+[sub_resource type="Resource" id=45]
+script = ExtResource( 3 )
+from = "LevelSelect"
+to = "MainMenu"
+conditions = {
+"back": SubResource( 44 )
+}
+
+[sub_resource type="Resource" id=46]
+script = ExtResource( 4 )
+name = "quit"
+
+[sub_resource type="Resource" id=47]
+script = ExtResource( 3 )
+from = "MainMenu"
+to = "Exit"
+conditions = {
+"quit": SubResource( 46 )
+}
+
+[sub_resource type="Resource" id=48]
+script = ExtResource( 4 )
+name = "start_game"
+
+[sub_resource type="Resource" id=49]
+script = ExtResource( 3 )
+from = "MainMenu"
+to = "LevelSelect"
+conditions = {
+"start_game": SubResource( 48 )
+}
+
+[sub_resource type="Resource" id=50]
+script = ExtResource( 4 )
+name = "splash_anim_finished"
+
+[sub_resource type="Resource" id=51]
+script = ExtResource( 3 )
+from = "SplashScreen"
+to = "StartScreen"
+conditions = {
+"splash_anim_finished": SubResource( 50 )
+}
+
+[sub_resource type="Resource" id=52]
+script = ExtResource( 4 )
+name = "enter"
+
+[sub_resource type="Resource" id=53]
+script = ExtResource( 3 )
+from = "StartScreen"
+to = "MainMenu"
+conditions = {
+"enter": SubResource( 52 )
+}
+
+[resource]
+script = ExtResource( 1 )
+name = ""
+states = {
+"Entry": SubResource( 1 ),
+"Exit": SubResource( 2 ),
+"Game": SubResource( 35 ),
+"LevelSelect": SubResource( 36 ),
+"MainMenu": SubResource( 37 ),
+"SplashScreen": SubResource( 38 ),
+"StartScreen": SubResource( 39 )
+}
+transitions = {
+"Entry": {
+"SplashScreen": SubResource( 40 )
+},
+"Game": {
+"MainMenu": SubResource( 41 )
+},
+"LevelSelect": {
+"Game": SubResource( 43 ),
+"MainMenu": SubResource( 45 )
+},
+"MainMenu": {
+"Exit": SubResource( 47 ),
+"LevelSelect": SubResource( 49 )
+},
+"SplashScreen": {
+"StartScreen": SubResource( 51 )
+},
+"StartScreen": {
+"MainMenu": SubResource( 53 )
+}
+}

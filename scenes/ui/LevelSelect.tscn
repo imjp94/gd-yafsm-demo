@@ -1,0 +1,86 @@
+[gd_scene load_steps=7 format=2]
+
+[ext_resource path="res://scenes/ui/LevelSelect.gd" type="Script" id=1]
+[ext_resource path="res://scenes/game/3d/kinematicbody/KinematicLevel3D.tscn" type="PackedScene" id=2]
+[ext_resource path="res://scenes/game/2d/kinematicbody/KinematicLevel2D.tscn" type="PackedScene" id=3]
+[ext_resource path="res://assets/fonts/Roboto/Roboto-Regular.ttf" type="DynamicFontData" id=4]
+
+[sub_resource type="StyleBoxFlat" id=1]
+bg_color = Color( 0.231373, 0.231373, 0.231373, 1 )
+
+[sub_resource type="DynamicFont" id=2]
+size = 72
+use_filter = true
+font_data = ExtResource( 4 )
+
+[node name="LevelSelect" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource( 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+level_3d_scn = ExtResource( 2 )
+level_2d_scn = ExtResource( 3 )
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+custom_styles/panel = SubResource( 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="CenterContainer" type="CenterContainer" parent="PanelContainer"]
+margin_right = 1024.0
+margin_bottom = 600.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/CenterContainer"]
+margin_left = 207.0
+margin_top = 157.0
+margin_right = 816.0
+margin_bottom = 442.0
+
+[node name="MarginContainer" type="MarginContainer" parent="PanelContainer/CenterContainer/VBoxContainer"]
+margin_right = 609.0
+margin_bottom = 213.0
+custom_constants/margin_right = 64
+custom_constants/margin_top = 64
+custom_constants/margin_left = 64
+custom_constants/margin_bottom = 64
+
+[node name="Title" type="Label" parent="PanelContainer/CenterContainer/VBoxContainer/MarginContainer"]
+margin_left = 64.0
+margin_top = 64.0
+margin_right = 545.0
+margin_bottom = 149.0
+custom_fonts/font = SubResource( 2 )
+text = "Level Selection"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/CenterContainer/VBoxContainer"]
+margin_left = 220.0
+margin_top = 217.0
+margin_right = 388.0
+margin_bottom = 285.0
+size_flags_horizontal = 4
+size_flags_vertical = 5
+
+[node name="RestoreLastSession" type="Button" parent="PanelContainer/CenterContainer/VBoxContainer/VBoxContainer"]
+margin_right = 168.0
+margin_bottom = 20.0
+text = "Restore Last Session"
+
+[node name="SelectKinematic3DLevel" type="Button" parent="PanelContainer/CenterContainer/VBoxContainer/VBoxContainer"]
+margin_top = 24.0
+margin_right = 168.0
+margin_bottom = 44.0
+text = "New Kinematic 3D Level"
+
+[node name="SelectKinematic2DLevel" type="Button" parent="PanelContainer/CenterContainer/VBoxContainer/VBoxContainer"]
+margin_top = 48.0
+margin_right = 168.0
+margin_bottom = 68.0
+text = "New Kinematic 2D Level"
+[connection signal="pressed" from="PanelContainer/CenterContainer/VBoxContainer/VBoxContainer/RestoreLastSession" to="." method="_on_RestoreLastSession_pressed"]
+[connection signal="pressed" from="PanelContainer/CenterContainer/VBoxContainer/VBoxContainer/SelectKinematic3DLevel" to="." method="_on_Select3D_pressed"]
+[connection signal="pressed" from="PanelContainer/CenterContainer/VBoxContainer/VBoxContainer/SelectKinematic2DLevel" to="." method="_on_Select2D_pressed"]

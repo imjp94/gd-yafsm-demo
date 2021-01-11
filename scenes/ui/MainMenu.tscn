@@ -1,0 +1,187 @@
+[gd_scene load_steps=9 format=2]
+
+[ext_resource path="res://scenes/ui/MainMenu.gd" type="Script" id=1]
+[ext_resource path="res://assets/fonts/Roboto/Roboto-Regular.ttf" type="DynamicFontData" id=2]
+[ext_resource path="res://icon.png" type="Texture" id=3]
+
+[sub_resource type="StyleBoxFlat" id=1]
+bg_color = Color( 0.23, 0.23, 0.23, 1 )
+
+[sub_resource type="DynamicFont" id=2]
+size = 72
+use_filter = true
+font_data = ExtResource( 2 )
+
+[sub_resource type="DynamicFont" id=3]
+size = 30
+use_filter = true
+font_data = ExtResource( 2 )
+
+[sub_resource type="Animation" id=4]
+resource_name = "entry"
+tracks/0/type = "value"
+tracks/0/path = NodePath("PanelContainer/CenterContainer/VBoxContainer/VBoxContainer:anchor_top")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 1 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 0,
+"values": [ 1.0, 0.0 ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("PanelContainer/CenterContainer/VBoxContainer/VBoxContainer:anchor_bottom")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0, 1 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 0,
+"values": [ 1.0, 0.0 ]
+}
+tracks/2/type = "value"
+tracks/2/path = NodePath("PanelContainer/CenterContainer/VBoxContainer/MarginContainer/VBoxContainer/HBoxContainer:modulate")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/keys = {
+"times": PoolRealArray( 0, 1 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 1 ) ]
+}
+tracks/3/type = "value"
+tracks/3/path = NodePath("PanelContainer/CenterContainer/VBoxContainer/MarginContainer/VBoxContainer/Subtitle:modulate")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/keys = {
+"times": PoolRealArray( 0, 1 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 1 ) ]
+}
+
+[sub_resource type="Animation" id=5]
+resource_name = "exit"
+length = 0.3
+tracks/0/type = "value"
+tracks/0/path = NodePath(".:modulate")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.2 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 1 ), Color( 1, 1, 1, 0 ) ]
+}
+
+[node name="MainMenu" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource( 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+custom_styles/panel = SubResource( 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="CenterContainer" type="CenterContainer" parent="PanelContainer"]
+margin_right = 1024.0
+margin_bottom = 600.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/CenterContainer"]
+margin_left = 245.0
+margin_top = 149.0
+margin_right = 778.0
+margin_bottom = 450.0
+
+[node name="MarginContainer" type="MarginContainer" parent="PanelContainer/CenterContainer/VBoxContainer"]
+margin_right = 533.0
+margin_bottom = 253.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_constants/margin_right = 64
+custom_constants/margin_top = 64
+custom_constants/margin_left = 64
+custom_constants/margin_bottom = 64
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/CenterContainer/VBoxContainer/MarginContainer"]
+margin_left = 64.0
+margin_top = 64.0
+margin_right = 469.0
+margin_bottom = 189.0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/CenterContainer/VBoxContainer/MarginContainer/VBoxContainer"]
+margin_right = 405.0
+margin_bottom = 85.0
+
+[node name="TextureRect" type="TextureRect" parent="PanelContainer/CenterContainer/VBoxContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+margin_right = 64.0
+margin_bottom = 85.0
+texture = ExtResource( 3 )
+
+[node name="Title" type="Label" parent="PanelContainer/CenterContainer/VBoxContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+margin_left = 68.0
+margin_right = 405.0
+margin_bottom = 85.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_fonts/font = SubResource( 2 )
+text = "gd-YAFSM"
+align = 1
+
+[node name="Subtitle" type="Label" parent="PanelContainer/CenterContainer/VBoxContainer/MarginContainer/VBoxContainer"]
+margin_top = 89.0
+margin_right = 405.0
+margin_bottom = 125.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_fonts/font = SubResource( 3 )
+text = "Demo"
+align = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/CenterContainer/VBoxContainer"]
+margin_left = 225.0
+margin_top = 257.0
+margin_right = 308.0
+margin_bottom = 301.0
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="StartGame" type="Button" parent="PanelContainer/CenterContainer/VBoxContainer/VBoxContainer"]
+margin_right = 83.0
+margin_bottom = 20.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "Start Game"
+
+[node name="Quit" type="Button" parent="PanelContainer/CenterContainer/VBoxContainer/VBoxContainer"]
+margin_top = 24.0
+margin_right = 83.0
+margin_bottom = 44.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "Quit"
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+autoplay = "entry"
+anims/entry = SubResource( 4 )
+anims/exit = SubResource( 5 )
+[connection signal="pressed" from="PanelContainer/CenterContainer/VBoxContainer/VBoxContainer/StartGame" to="." method="_on_StartGame_pressed"]
+[connection signal="pressed" from="PanelContainer/CenterContainer/VBoxContainer/VBoxContainer/Quit" to="." method="_on_Quit_pressed"]
+[connection signal="animation_finished" from="AnimationPlayer" to="." method="_on_AnimationPlayer_animation_finished"]

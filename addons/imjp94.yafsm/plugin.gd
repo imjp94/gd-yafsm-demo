@@ -10,6 +10,10 @@ const StateMachineEditor = preload("scenes/StateMachineEditor.tscn")
 const TransitionInspector = preload("scenes/transition_editors/TransitionInspector.gd")
 const StateInspector = preload("scenes/state_nodes/StateInspector.gd")
 
+const StackPlayerIcon = preload("assets/icons/stack_player_icon.png")
+const StateMachinePlayerIcon = preload("assets/icons/state_machine_player_icon.png")
+const StateMachineIcon = preload("assets/icons/state_machine_icon.png")
+
 var state_machine_editor = StateMachineEditor.instance()
 var transition_inspector = TransitionInspector.new()
 var state_inspector = StateInspector.new()
@@ -22,12 +26,9 @@ func _enter_tree():
 	editor_selection = get_editor_interface().get_selection()
 	editor_selection.connect("selection_changed", self, "_on_EditorSelection_selection_changed")
 	var editor_base_control = get_editor_interface().get_base_control()
-	var node_icon = editor_base_control.get_icon("Node", "EditorIcons")
-	var control_icon = editor_base_control.get_icon("Control", "EditorIcons")
-	var resource_icon = editor_base_control.get_icon("ResourcePreloader", "EditorIcons")
-	add_custom_type("StackPlayer", "Node", StackPlayer, node_icon)
-	add_custom_type("StateMachinePlayer", "Node", StateMachinePlayer, node_icon)
-	add_custom_type("StateMachine", "Resource", StateMachine, resource_icon)
+	add_custom_type("StackPlayer", "Node", StackPlayer, StackPlayerIcon)
+	add_custom_type("StateMachinePlayer", "Node", StateMachinePlayer, StateMachinePlayerIcon)
+	add_custom_type("StateMachine", "Resource", StateMachine, StateMachineIcon)
 
 	state_machine_editor.selection_stylebox.bg_color = editor_base_control.get_color("box_selection_fill_color", "Editor")
 	state_machine_editor.selection_stylebox.border_color = editor_base_control.get_color("box_selection_stroke_color", "Editor")
@@ -93,6 +94,7 @@ func _on_focused_object_changed(new_obj):
 			state_machine_editor.state_machine_player = focused_object
 		elif focused_object is StateMachine:
 			state_machine = focused_object
+			state_machine_editor.state_machine_player = null
 		state_machine_editor.state_machine = state_machine
 	else:
 		hide_state_machine_editor()
@@ -103,6 +105,8 @@ func _on_inspector_changed(property):
 func _on_StateMachineEditor_node_selected(node):
 	var to_inspect
 	if "state" in node:
+		if node.state is StateMachine: # Ignore, inspect state machine will trigger edit()
+			return
 		to_inspect = node.state
 	elif "transition" in node:
 		to_inspect = node.transition

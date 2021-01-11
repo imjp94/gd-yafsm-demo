@@ -2,7 +2,7 @@
 
 ## Classes
 
-All of the classes are located in `res://addons/imjp94.yafsm/src` but you can just preload `res://addons/imjp94.yafsm/YAFSM.gd` to import all classes available:
+All of the class are located in `res://addons/imjp94.yafsm/src` but you can just preload `res://addons/imjp94.yafsm/YAFSM.gd` to import all class available:
 
 ```gdscript
 const YAFSM = preload("res://addons/imjp94.yafsm/YAFSM.gd")
@@ -14,14 +14,14 @@ const State = YAFSM.State
 
 ### Node
 
-- [StackPlayer](src/StackPlayer.gd)
+- [StackPlayer](src/StackPlayer.gd) ![StackPlayer icon](assets/icons/stack_player_icon.png)
   > Manage stack of item, use push/pop function to set current item on top of stack
   - `current # Current item on top of stack`
   - `stack`
   - signals:
     - `pushed(to) # When item pushed to stack`
     - `popped(from) # When item popped from stack`
-- [StateMachinePlayer](src/StateMachinePlayer.gd)(extends StackPlayer)
+- [StateMachinePlayer](src/StateMachinePlayer.gd)(extends StackPlayer) ![StateMachinePlayer icon](assets/icons/state_machine_player_icon.png)
   > Manage state based on `StateMachine` and parameters inputted
   - `state_machine # StateMachine being played`
   - `active # Activeness of player`
@@ -29,14 +29,19 @@ const State = YAFSM.State
   - `process_mode # ProcessMode of player`
   - signals:
     - `transited(from, to) # Transition of state`
-    - `entered() # Entry of state machine`
-    - `exited() # Exit of state machine`
+    - `entered(to) # Entry of state machine(including nested), empty string equals to root`
+    - `exited(from) # Exit of state machine(including nested, empty string equals to root`
     - `updated(state, delta) # Time to update(based on process_mode), up to user to handle any logic, for example, update movement of KinematicBody`
 
 ### Control
 
 - [StackPlayerDebugger](src/debugger/StackPlayerDebugger.gd)
   > Visualize stack of parent StackPlayer on screen
+
+### Reference
+
+- [StateDirectory](src/StateDirectory.gd)
+  > Convert state path to directory object for traversal, mainly used for nested state
 
 ### Resource
 
@@ -54,7 +59,7 @@ var condition = transition.conditions[condition_name] # keyed by condition name
 - [State](src/states/State.gd)
   > Resource that represent a state
   - `name`
-- [StateMachine](src/states/StateMachine.gd)(`extends State`)
+- [StateMachine](src/states/StateMachine.gd)(`extends State`) ![StateMachine icon](assets/icons/state_machine_icon.png)
   > `StateMachine` is also a `State`, but mainly used as container of `State`s and `Transitions`s
   - `states`
   - `transitions`
@@ -73,3 +78,4 @@ var condition = transition.conditions[condition_name] # keyed by condition name
 - [BooleanCondition](src/conditions/BooleanCondition.gd)(`extends ValueCondition`)
 - [IntegerCondition](src/conditions/IntegerCondition.gd)(`extends ValueCondition`)
 - [FloatCondition](src/conditions/FloatCondition.gd)(`extends ValueCondition`)
+- [StringCondition](src/conditions/StringCondition.gd)(`extends ValueCondition`)
