@@ -56,11 +56,11 @@ func _on_AppState_transited(from, to):
         add_child(next_scene)
 ```
 
-*[Main.gd](Main.gd) free last previous scene & spawn next scene in "transited(from, to)" signal*
+*[Main.gd](Main.gd) free previous scene & spawn next scene in "transited(from, to)" signal*
 
 ### Cache Scene
 
-Cache a game level in runtime when player quit unfinished level, then restore it on next time
+Cache a unfinished game level, then restore it on next time
 
 ```gdscript
 func _on_AppState_transited(from, to):
@@ -130,7 +130,7 @@ func _on_Area_body_entered(body):
 ...
 ```
 
-[KinematicLevel3D.gd](scenes/game/3d/kinematicbody/KinematicLevel3D.gd) nested parameter "Game/End/win" to update game state
+[KinematicLevel3D.gd](scenes/game/3d/kinematicbody/KinematicLevel3D.gd) make use of nested parameter "Game/End/win" to update game state
 
 > NOTE: Nested parameter("Game/End/win") is used in this case, so that it will be reset(erased) automatically on "Game/End/Exit" and you don't have to initiliaze the parameter everytime game start
 
