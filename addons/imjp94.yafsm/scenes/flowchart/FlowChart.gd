@@ -22,6 +22,8 @@ export var scroll_margin = 100
 export var interconnection_offset = 10
 # Snap amount
 export var snap = 20
+# Zoom amount
+export var zoom = 1.0 setget set_zoom
 
 var content = Control.new() # Root node that hold anything drawn in the flowchart
 var current_layer
@@ -137,16 +139,20 @@ func _on_h_scroll_changed(value):
 func _on_v_scroll_changed(value):
 	content.rect_position.y = -value
 
+func set_zoom(v):
+	zoom = v
+	content.rect_scale = Vector2.ONE * zoom
+
 func _on_zoom_minus_pressed():
-	content.rect_scale -= Vector2.ONE * 0.1
+	set_zoom(zoom - 0.1)
 	update()
 
 func _on_zoom_reset_pressed():
-	content.rect_scale = Vector2.ONE
+	set_zoom(1.0)
 	update()
 
 func _on_zoom_plus_pressed():
-	content.rect_scale += Vector2.ONE * 0.1
+	set_zoom(zoom + 0.1)
 	update()
 
 func _on_snap_button_pressed():
@@ -187,7 +193,6 @@ func _draw():
 	# Draw grid
 	# Refer GraphEdit(https://github.com/godotengine/godot/blob/6019dab0b45e1291e556e6d9e01b625b5076cc3c/scene/gui/graph_edit.cpp#L442)
 	if is_snapping:
-		var zoom = (Vector2.ONE/content.rect_scale).length()
 		var scroll_offset = Vector2(h_scroll.get_value(), v_scroll.get_value());
 		var offset = scroll_offset / zoom
 		var size = rect_size / zoom
@@ -285,6 +290,7 @@ func _gui_input(event):
 						# Connecting
 						if _current_connection:
 							var pos = content_position(get_local_mouse_position())
+							var clip_rects = [_current_connection.from_node.get_rect()]
 							# Snapping connecting line
 							for i in current_layer.content_nodes.get_child_count():
 								var child = current_layer.content_nodes.get_child(current_layer.content_nodes.get_child_count()-1 - i) # Inverse order to check from top to bottom of canvas
@@ -292,8 +298,9 @@ func _gui_input(event):
 									if _request_connect_to(child.name):
 										if child.get_rect().has_point(pos):
 											pos = child.rect_position + child.rect_size / 2
+											clip_rects.append(child.get_rect())
 											break
-							_current_connection.line.join(_current_connection.get_from_pos(), pos)
+							_current_connection.line.join(_current_connection.get_from_pos(), pos, Vector2.ZERO, clip_rects)
 					elif _is_dragging_node:
 						# Dragging nodes
 						var dragged = content_position(_drag_end_pos) - content_position(_drag_start_pos)
@@ -301,9 +308,11 @@ func _gui_input(event):
 							var selected = _selection[i]
 							if not (selected is FlowChartNode):
 								continue
-							selected.rect_position = (_drag_origins[i] + dragged)
+							selected.rect_position = (_drag_origins[i] + selected.rect_size / 2.0 + dragged)
+							selected.modulate.a = 0.3
 							if is_snapping:
 								selected.rect_position = selected.rect_position.snapped(Vector2.ONE * snap)
+							selected.rect_position -= selected.rect_size / 2.0 
 							_on_node_dragged(selected, dragged)
 							emit_signal("dragged", selected, dragged)
 							# Update connection pos
@@ -321,15 +330,15 @@ func _gui_input(event):
 			BUTTON_MIDDLE:
 				# Reset zoom
 				if event.doubleclick:
-					content.rect_scale = Vector2.ONE
+					set_zoom(1.0)
 					update()
 			BUTTON_WHEEL_UP:
 				# Zoom in
-				content.rect_scale += Vector2.ONE * 0.01
+				set_zoom(zoom + 0.01)
 				update()
 			BUTTON_WHEEL_DOWN:
 				# Zoom out
-				content.rect_scale -= Vector2.ONE * 0.01
+				set_zoom(zoom - 0.01)
 				update()
 			BUTTON_LEFT:
 				# Hit detection
@@ -392,8 +401,9 @@ func _gui_input(event):
 									_is_dragging_node = false
 									var line = create_line_instance()
 									var connection = Connection.new(line, hit_node, null)
-									current_layer._connect_node(line, connection.get_from_pos(), connection.get_from_pos())
+									current_layer._connect_node(connection)
 									_current_connection = connection
+									_current_connection.line.join(_current_connection.get_from_pos(), content_position(event.position))
 							accept_event()
 						if _is_connecting:
 							clear_selection()
@@ -410,26 +420,26 @@ func _gui_input(event):
 					if _current_connection:
 						# Connection end
 						var from = _current_connection.from_node.name
-						if hit_node is FlowChartNode and _request_connect_to(hit_node.name if hit_node else null):
+						var to = hit_node.name if hit_node else null
+						if hit_node is FlowChartNode and _request_connect_to(to) and from != to:
 							# Connection success
 							var line
-							var to = hit_node.name
 							if _current_connection.to_node:
 								# Reconnection
 								line = disconnect_node(from, _current_connection.to_node.name)
 								_current_connection.to_node = hit_node
 								_on_node_reconnect_end(from, to)
+								connect_node(from, to, line)
 							else:
 								# New Connection
 								current_layer.content_lines.remove_child(_current_connection.line)
 								line = _current_connection.line
 								_current_connection.to_node = hit_node
-							connect_node(from, to, line)
+								connect_node(from, to, line)
 						else:
 							# Connection failed
 							if _current_connection.to_node:
 								# Reconnection
-								var to = _current_connection.to_node.name
 								_current_connection.join()
 								_on_node_reconnect_failed(from, name)
 							else:
@@ -465,7 +475,9 @@ func _gui_input(event):
 						if was_dragging_node:
 							# Update _drag_origins with new position after dragged
 							for i in _selection.size():
-								_drag_origins[i] = _selection[i].rect_position
+								var selected = _selection[i]
+								_drag_origins[i] = selected.rect_position
+								selected.modulate.a = 1.0
 						_drag_start_pos = _drag_end_pos
 						update()
 
