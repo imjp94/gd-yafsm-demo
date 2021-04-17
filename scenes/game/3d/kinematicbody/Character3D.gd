@@ -15,7 +15,6 @@ var _jump_count = 0
 
 func _ready():
 	smp.connect("updated", self, "_on_StateMachinePlayer_updated")
-	smp.connect("transited", self, "_on_StateMachine_transited")
 
 func _physics_process(delta):
 	if Input.is_action_pressed("ui_left"):
@@ -82,6 +81,3 @@ func _on_StateMachinePlayer_updated(state, delta):
 	velocity = move_and_slide(velocity, Vector3.UP)
 	velocity.x *= pow(1.0 - damping, delta)
 	velocity.z *= pow(1.0 - damping, delta)
-
-func _on_StateMachine_transited(from, to):
-	prints("Transition(%s -> %s)" % [from, to])
