@@ -1,4 +1,4 @@
-[gd_resource type="Resource" load_steps=37 format=2]
+[gd_resource type="Resource" load_steps=33 format=2]
 
 [ext_resource path="res://addons/imjp94.yafsm/src/states/StateMachine.gd" type="Script" id=1]
 [ext_resource path="res://addons/imjp94.yafsm/src/transitions/Transition.gd" type="Script" id=2]
@@ -59,56 +59,58 @@ conditions = {
 }
 
 [sub_resource type="Resource" id=8]
-script = ExtResource( 5 )
-name = "jump_count"
-comparation = 3
-value = 2
-
-[sub_resource type="Resource" id=9]
-script = ExtResource( 5 )
-name = "jump_elapsed"
-comparation = 5
-value = 2000
-
-[sub_resource type="Resource" id=10]
-script = ExtResource( 3 )
-name = "space"
-
-[sub_resource type="Resource" id=11]
-script = ExtResource( 2 )
-from = "Fall"
-to = "Jump(n)"
-conditions = {
-"jump_count": SubResource( 8 ),
-"jump_elapsed": SubResource( 9 ),
-"space": SubResource( 10 )
-}
-
-[sub_resource type="Resource" id=12]
 script = ExtResource( 4 )
 name = "on_floor"
 comparation = 0
 value = true
 
-[sub_resource type="Resource" id=13]
+[sub_resource type="Resource" id=9]
 script = ExtResource( 2 )
 from = "Fall"
 to = "Idle"
 conditions = {
-"on_floor": SubResource( 12 )
+"on_floor": SubResource( 8 )
 }
 
-[sub_resource type="Resource" id=14]
+[sub_resource type="Resource" id=10]
 script = ExtResource( 5 )
 name = "jump_count"
 comparation = 3
 value = 2
 
-[sub_resource type="Resource" id=15]
+[sub_resource type="Resource" id=11]
 script = ExtResource( 5 )
 name = "jump_elapsed"
 comparation = 5
-value = 200
+value = 1500
+
+[sub_resource type="Resource" id=12]
+script = ExtResource( 3 )
+name = "space"
+
+[sub_resource type="Resource" id=13]
+script = ExtResource( 2 )
+from = "Fall"
+to = "Jump(n)"
+conditions = {
+"jump_count": SubResource( 10 ),
+"jump_elapsed": SubResource( 11 ),
+"space": SubResource( 12 )
+}
+
+[sub_resource type="Resource" id=14]
+script = ExtResource( 4 )
+name = "on_floor"
+comparation = 0
+value = false
+
+[sub_resource type="Resource" id=15]
+script = ExtResource( 2 )
+from = "Idle"
+to = "Fall"
+conditions = {
+"on_floor": SubResource( 14 )
+}
 
 [sub_resource type="Resource" id=16]
 script = ExtResource( 3 )
@@ -116,55 +118,27 @@ name = "space"
 
 [sub_resource type="Resource" id=17]
 script = ExtResource( 2 )
-from = "Fall"
-to = "Jump(n)"
+from = "Idle"
+to = "Jump"
 conditions = {
-"jump_count": SubResource( 14 ),
-"jump_elapsed": SubResource( 15 ),
 "space": SubResource( 16 )
 }
 
 [sub_resource type="Resource" id=18]
-script = ExtResource( 4 )
-name = "on_floor"
-comparation = 0
-value = false
-
-[sub_resource type="Resource" id=19]
-script = ExtResource( 2 )
-from = "Idle"
-to = "Fall"
-conditions = {
-"on_floor": SubResource( 18 )
-}
-
-[sub_resource type="Resource" id=20]
-script = ExtResource( 3 )
-name = "space"
-
-[sub_resource type="Resource" id=21]
-script = ExtResource( 2 )
-from = "Idle"
-to = "Jump"
-conditions = {
-"space": SubResource( 20 )
-}
-
-[sub_resource type="Resource" id=22]
 script = ExtResource( 6 )
 name = "walk"
 comparation = 2
 value = 0.0
 
-[sub_resource type="Resource" id=23]
+[sub_resource type="Resource" id=19]
 script = ExtResource( 2 )
 from = "Idle"
 to = "Walk"
 conditions = {
-"walk": SubResource( 22 )
+"walk": SubResource( 18 )
 }
 
-[sub_resource type="Resource" id=24]
+[sub_resource type="Resource" id=20]
 script = ExtResource( 2 )
 from = "Jump"
 to = "Fall"
@@ -172,7 +146,7 @@ conditions = {
 
 }
 
-[sub_resource type="Resource" id=25]
+[sub_resource type="Resource" id=21]
 script = ExtResource( 2 )
 from = "Jump(n)"
 to = "Fall"
@@ -180,30 +154,30 @@ conditions = {
 
 }
 
-[sub_resource type="Resource" id=26]
+[sub_resource type="Resource" id=22]
 script = ExtResource( 6 )
 name = "walk"
 comparation = 5
 value = 0.0
 
-[sub_resource type="Resource" id=27]
+[sub_resource type="Resource" id=23]
 script = ExtResource( 2 )
 from = "Walk"
 to = "Idle"
 conditions = {
-"walk": SubResource( 26 )
+"walk": SubResource( 22 )
 }
 
-[sub_resource type="Resource" id=28]
+[sub_resource type="Resource" id=24]
 script = ExtResource( 3 )
 name = "space"
 
-[sub_resource type="Resource" id=29]
+[sub_resource type="Resource" id=25]
 script = ExtResource( 2 )
 from = "Walk"
 to = "Jump"
 conditions = {
-"space": SubResource( 28 )
+"space": SubResource( 24 )
 }
 
 [resource]
@@ -222,23 +196,22 @@ transitions = {
 "Idle": SubResource( 7 )
 },
 "Fall": {
-"DoubleJump": SubResource( 11 ),
-"Idle": SubResource( 13 ),
-"Jump(n)": SubResource( 17 )
+"Idle": SubResource( 9 ),
+"Jump(n)": SubResource( 13 )
 },
 "Idle": {
-"Fall": SubResource( 19 ),
-"Jump": SubResource( 21 ),
-"Walk": SubResource( 23 )
+"Fall": SubResource( 15 ),
+"Jump": SubResource( 17 ),
+"Walk": SubResource( 19 )
 },
 "Jump": {
-"Fall": SubResource( 24 )
+"Fall": SubResource( 20 )
 },
 "Jump(n)": {
-"Fall": SubResource( 25 )
+"Fall": SubResource( 21 )
 },
 "Walk": {
-"Idle": SubResource( 27 ),
-"Jump": SubResource( 29 )
+"Idle": SubResource( 23 ),
+"Jump": SubResource( 25 )
 }
 }
