@@ -1,20 +1,21 @@
 tool
 extends "res://addons/imjp94.yafsm/scenes/flowchart/FlowChartLine.gd"
 const Transition = preload("../../src/transitions/Transition.gd")
+const ValueCondition = preload("../../src/conditions/ValueCondition.gd")
 
 export var upright_angle_range = 10.0
 
 onready var label_margin = $MarginContainer
-onready var label = $MarginContainer/Label
+onready var vbox = $MarginContainer/VBoxContainer
 
 var undo_redo
 
 var transition setget set_transition
+var template = "{condition_name} {condition_comparation} {condition_value}"
 
-var _to_free
+var _template_var = {}
 
 func _init():
-	_to_free = []
 	set_transition(Transition.new())
 
 func _draw():
@@ -43,12 +44,25 @@ func _draw():
 
 # Update overlay text
 func update_label():
-	label.text = ""
 	if transition:
+		var template_var = {"condition_name": "", "condition_comparation": "", "condition_value": null}
 		for condition in transition.conditions.values():
-			if label.text.length() > 0:
-				label.text = str(label.text, "\n")
-			label.text = str(label.text, condition.display_string())
+			var label = vbox.get_node_or_null(condition.name)
+			if not label:
+				label = Label.new()
+				label.align = label.ALIGN_CENTER
+				label.name = condition.name
+				vbox.add_child(label)
+			if "value" in condition:
+				template_var["condition_name"] = condition.name
+				template_var["condition_comparation"] = ValueCondition.COMPARATION_SYMBOLS[condition.comparation]
+				template_var["condition_value"] = condition.get_value_string()
+				label.text = template.format(template_var)
+				var override_template_var = _template_var.get(condition.name)
+				if override_template_var:
+					label.text = label.text.format(override_template_var)
+			else:
+				label.text = condition.name
 	update()
 
 func _on_transition_changed(new_transition):
@@ -74,6 +88,9 @@ func _on_transition_condition_removed(condition):
 	update_label()
 
 func _on_condition_name_changed(from, to):
+	var label = vbox.get_node_or_null(from)
+	if label:
+		label.name = to
 	update_label()
 
 func _on_condition_display_string_changed(display_string):

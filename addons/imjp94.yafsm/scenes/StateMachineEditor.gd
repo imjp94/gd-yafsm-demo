@@ -4,6 +4,7 @@ const StateMachinePlayer = preload("../src/StateMachinePlayer.gd")
 const StateMachine = preload("../src/states/StateMachine.gd")
 const Transition = preload("../src/transitions/Transition.gd")
 const State = preload("../src/states/State.gd")
+const StateDirectory = preload("../src/StateDirectory.gd")
 const StateNode = preload("state_nodes/StateNode.tscn")
 const TransitionLine = preload("transition_editors/TransitionLine.tscn")
 const StateNodeScript = preload("state_nodes/StateNode.gd")
@@ -11,6 +12,7 @@ const StateMachineEditorLayer = preload("StateMachineEditorLayer.gd")
 const PathViewer = preload("PathViewer.gd")
 
 signal inspector_changed(property) # Inform plugin to refresh inspector
+signal debug_mode_changed(new_debug_mode)
 
 const ENTRY_STATE_MISSING_MSG = {
 	"key": "entry_state_missing",
@@ -20,6 +22,10 @@ const EXIT_STATE_MISSING_MSG = {
 	"key": "exit_state_missing",
 	"text": "Exit State missing, it will never exit from nested state. Right-click -> \"Add Exit\"."
 }
+const DEBUG_MODE_MSG = {
+	"key": "debug_mode",
+	"text": "Debug Mode"
+}
 
 onready var context_menu = $ContextMenu
 onready var state_node_context_menu = $StateNodeContextMenu
@@ -27,6 +33,7 @@ onready var convert_to_state_confirmation = $ConvertToStateConfirmation
 onready var save_dialog = $SaveDialog
 onready var create_new_state_machine_container = $MarginContainer
 onready var create_new_state_machine = $MarginContainer/CreateNewStateMachine
+onready var param_panel = $ParametersPanel
 var path_viewer = HBoxContainer.new()
 var condition_visibility = TextureButton.new()
 var unsaved_indicator = Label.new()
@@ -37,20 +44,22 @@ var transition_arrow_icon
 
 var undo_redo
 
+var debug_mode = false setget set_debug_mode
 var state_machine_player setget set_state_machine_player
 var state_machine setget set_state_machine
+var can_gui_name_edit = true
+var can_gui_context_menu = true
 
 var _reconnecting_connection
 var _last_index = 0
 var _last_path = ""
 var _message_box_dict = {}
 var _context_node
-var _to_free
+var _current_state = ""
+var _last_stack = []
 
 
 func _init():
-	_to_free = []
-
 	path_viewer.mouse_filter = MOUSE_FILTER_IGNORE
 	path_viewer.set_script(PathViewer)
 	path_viewer.connect("dir_pressed", self, "_on_path_viewer_dir_pressed")
@@ -75,6 +84,8 @@ func _init():
 
 	content.get_child(0).name = "root"
 
+	set_process(false)
+
 func _ready():
 	create_new_state_machine_container.visible = false
 	create_new_state_machine.connect("pressed", self, "_on_create_new_state_machine_pressed")
@@ -83,19 +94,71 @@ func _ready():
 	convert_to_state_confirmation.connect("confirmed", self, "_on_convert_to_state_confirmation_confirmed")
 	save_dialog.connect("confirmed", self, "_on_save_dialog_confirmed")
 
-func _on_path_viewer_dir_pressed(path, index):
-	path_viewer.remove_dir_until(index) # Before select_layer, so path_viewer will be updated in _on_layer_selected
+func _process(delta):
+	if not debug_mode:
+		set_process(false)
+		return
+	if not state_machine_player:
+		set_process(false)
+		set_debug_mode(false)
+		return
+	var stack = state_machine_player.get("Members/StackPlayer.gd/stack")
+	if stack.size() == 1:
+		set_current_state(state_machine_player.get("Members/StackPlayer.gd/current"))
+	else:
+		var stack_max_index = stack.size() - 1
+		var prev_index = stack.find(_current_state)
+		if prev_index == -1:
+			if _last_stack.size() < stack.size():
+				# Reproduce transition, for example:
+				# [Entry, Idle, Walk]
+				# [Entry, Idle, Jump, Fall]
+				# Walk -> Idle
+				# Idle -> Jump
+				# Jump -> Fall
+				var common_index = -1
+				for i in _last_stack.size():
+					if _last_stack[i] == stack[i]:
+						common_index = i
+						break
+				if common_index > -1:
+					var count_from_last_stack = _last_stack.size()-1 - common_index -1
+					_last_stack.invert()
+					# Transit back to common state
+					for i in count_from_last_stack:
+						set_current_state(_last_stack[i + 1])
+					# Transit to all missing state in current stack
+					for i in range(common_index + 1, stack.size()):
+						set_current_state(stack[i])
+				else:
+					set_current_state(stack.back())
+			else:
+				set_current_state(stack.back())
+		else:
+			# Set every skipped state
+			var missing_count = stack_max_index - prev_index
+			for i in range(1, missing_count + 1):
+				set_current_state(stack[prev_index + i])
+	_last_stack = stack
+	var params = state_machine_player.get("Members/_parameters")
+	var local_params = state_machine_player.get("Members/_local_parameters")
+	param_panel.update_params(params, local_params)
+	get_focused_layer(_current_state).debug_update(_current_state, params, local_params)
+
+func _on_path_viewer_dir_pressed(dir, index):
+	var path = path_viewer.select_dir(dir)
 	select_layer(get_layer(path))
 
 	if _last_index > index:
 		# Going backward
 		var end_state_parent_path = StateMachinePlayer.path_backward(_last_path)
 		var end_state_name = StateMachinePlayer.path_end_dir(_last_path)
-		var layer = content.get_node(end_state_parent_path)
-		var node = layer.content_nodes.get_node(end_state_name)
-		if not node.state.states:
-			# Convert state machine node back to state node
-			convert_to_state(layer, node)
+		var layer = content.get_node_or_null(end_state_parent_path)
+		var node = layer.content_nodes.get_node_or_null(end_state_name)
+		if layer and node:
+			if not node.state.states:
+				# Convert state machine node back to state node
+				convert_to_state(layer, node)
 
 	_last_index = index
 	_last_path = path
@@ -117,7 +180,7 @@ func _on_context_menu_index_pressed(index):
 				return
 			new_node.name = State.EXIT_STATE
 	new_node.rect_position = content_position(get_local_mouse_position())
-	add_node(new_node)
+	add_node(current_layer, new_node)
 
 func _on_state_node_context_menu_index_pressed(index):
 	if not _context_node:
@@ -128,7 +191,7 @@ func _on_state_node_context_menu_index_pressed(index):
 			_copying_nodes = [_context_node]
 			_context_node = null
 		1: # Duplicate
-			duplicate_nodes([_context_node])
+			duplicate_nodes(current_layer, [_context_node])
 			_context_node = null
 		2: # Separator
 			_context_node = null
@@ -158,38 +221,64 @@ func _on_create_new_state_machine_pressed():
 
 func _on_condition_visibility_pressed():
 	for line in current_layer.content_lines.get_children():
-		line.label.visible = condition_visibility.pressed
+		line.vbox.visible = condition_visibility.pressed
+
+func _on_debug_mode_changed(new_debug_mode):
+	if new_debug_mode:
+		param_panel.show()
+		add_message(DEBUG_MODE_MSG.key, DEBUG_MODE_MSG.text)
+		set_process(true)
+		# mouse_filter = MOUSE_FILTER_IGNORE
+		can_gui_select_node = false
+		can_gui_delete_node = false
+		can_gui_connect_node = false
+		can_gui_name_edit = false
+		can_gui_context_menu = false
+	else:
+		param_panel.clear_params()
+		param_panel.hide()
+		remove_message(DEBUG_MODE_MSG.key)
+		set_process(false)
+		can_gui_select_node = true
+		can_gui_delete_node = true
+		can_gui_connect_node = true
+		can_gui_name_edit = true
+		can_gui_context_menu = true
 
 func _on_state_machine_player_changed(new_state_machine_player):
+	if not state_machine_player:
+		return
+	if new_state_machine_player.get_class() == "ScriptEditorDebuggerInspectedObject":
+		return
+
 	if new_state_machine_player:
 		create_new_state_machine_container.visible = !new_state_machine_player.state_machine
 	else:
 		create_new_state_machine_container.visible = false
 
 func _on_state_machine_changed(new_state_machine):
-	clear_graph()
-	# Reset layers & path viewer
-	var to_remove = []
 	var root_layer = get_layer("root")
+	path_viewer.select_dir("root") # Before select_layer, so path_viewer will be updated in _on_layer_selected
+	select_layer(root_layer)
+	clear_graph(root_layer)
+	# Reset layers & path viewer
 	for child in root_layer.get_children():
 		if child is FlowChartLayer:
 			root_layer.remove_child(child)
 			child.queue_free()
-	path_viewer.remove_dir_until(0) # Before select_layer, so path_viewer will be updated in _on_layer_selected
-	select_layer(root_layer)
 	if new_state_machine:
-		current_layer.state_machine = state_machine
+		root_layer.state_machine = state_machine
 		var validated = StateMachine.validate(new_state_machine)
 		if validated:
 			print("gd-YAFSM: Corrupted StateMachine Resource fixed, save to apply the fix.")
-		draw_graph()
+		draw_graph(root_layer)
 		check_has_entry()
 
 func _gui_input(event):
 	if event is InputEventMouseButton:
 		match event.button_index:
 			BUTTON_RIGHT:
-				if event.pressed:
+				if event.pressed and can_gui_context_menu:
 					context_menu.set_item_disabled(1, current_layer.state_machine.has_entry())
 					context_menu.set_item_disabled(2, current_layer.state_machine.has_exit())
 					context_menu.rect_position = get_viewport().get_mouse_position()
@@ -203,6 +292,54 @@ func _input(event):
 				if event.control and event.pressed:
 					save_request()
 
+func create_layer(node):
+	# Create/Move to new layer
+	var new_state_machine = convert_to_state_machine(current_layer, node)
+	# Determine current layer path
+	var parent_path = path_viewer.get_cwd()
+	var path = str(parent_path, "/", node.name)
+	var layer = get_layer(path)
+	path_viewer.add_dir(node.state.name) # Before select_layer, so path_viewer will be updated in _on_layer_selected
+	if not layer:
+		# New layer to spawn
+		layer = add_layer_to(get_layer(parent_path))
+		layer.name = node.state.name
+		layer.state_machine = new_state_machine
+		draw_graph(layer)
+	_last_index = path_viewer.get_child_count()-1
+	_last_path = path
+	return layer
+
+func open_layer(path):
+	var dir = StateDirectory.new(path)
+	dir.goto(dir.get_end_index())
+	dir.back()
+	var next_layer = get_next_layer(dir, get_layer("root"))
+	select_layer(next_layer)
+	return next_layer
+
+# Recursively get next layer
+func get_next_layer(dir, base_layer):
+	var next_layer = base_layer
+	var np = dir.next()
+	if np:
+		next_layer = base_layer.get_node_or_null(np)
+		if next_layer:
+			next_layer = get_next_layer(dir, next_layer)
+		else:
+			var to_dir = StateDirectory.new(dir.get_current())
+			to_dir.goto(to_dir.get_end_index())
+			to_dir.back()
+			var node = base_layer.content_nodes.get_node_or_null(to_dir.get_current_end())
+			next_layer = get_next_layer(dir, create_layer(node))
+	return next_layer
+
+func get_focused_layer(state):
+	var current_dir = StateDirectory.new(state)
+	current_dir.goto(current_dir.get_end_index())
+	current_dir.back()
+	return get_layer(str("root/", current_dir.get_current()))
+
 func _on_state_node_gui_input(event, node):
 	if node.state.is_entry() or node.state.is_exit():
 		return
@@ -212,30 +349,13 @@ func _on_state_node_gui_input(event, node):
 			BUTTON_LEFT:
 				if event.pressed:
 					if event.doubleclick:
-						if node.name_edit.get_rect().has_point(event.position):
+						if node.name_edit.get_rect().has_point(event.position) and can_gui_name_edit:
 							# Edit State name if within LineEdit
 							node.enable_name_edit(true)
 							accept_event()
 						else:
-							# Create/Move to new layer
-							var new_state_machine = convert_to_state_machine(current_layer, node)
-							# Determine current layer path
-							var parent_path = path_viewer.get_cwd()
-							var path = str(parent_path, "/", node.name)
-							var layer = get_layer(path)
-							path_viewer.add_dir(node.state.name) # Before select_layer, so path_viewer will be updated in _on_layer_selected
-							if layer:
-								# Layer already spawned
-								select_layer(layer)
-							else:
-								# New layer to spawn
-								layer = add_layer_to(get_layer(parent_path))
-								layer.name = node.state.name
-								layer.state_machine = new_state_machine
-								select_layer(layer)
-								draw_graph()
-							_last_index = path_viewer.get_child_count()-1
-							_last_path = path
+							var layer = create_layer(node)
+							select_layer(layer)
 							accept_event()
 			BUTTON_RIGHT:
 				if event.pressed:
@@ -277,6 +397,7 @@ func convert_to_state(layer, node):
 func create_layer_instance():
 	var layer = Control.new()
 	layer.set_script(StateMachineEditorLayer)
+	layer.editor_accent_color = editor_accent_color
 	return layer
 
 func create_line_instance():
@@ -302,32 +423,32 @@ func save():
 	ResourceSaver.save(state_machine.resource_path, state_machine)
 
 # Clear editor
-func clear_graph():
+func clear_graph(layer):
 	clear_connections()
-	for child in current_layer.content_nodes.get_children():
+	for child in layer.content_nodes.get_children():
 		if child is StateNodeScript:
-			current_layer.content_nodes.remove_child(child)
-			_to_free.append(child)
+			layer.content_nodes.remove_child(child)
+			child.queue_free()
 	unsaved_indicator.text = "" # Clear graph is not action by user
 
 # Intialize editor with current editing StateMachine
-func draw_graph():
-	for state_key in current_layer.state_machine.states.keys():
-		var state = current_layer.state_machine.states[state_key]
+func draw_graph(layer):
+	for state_key in layer.state_machine.states.keys():
+		var state = layer.state_machine.states[state_key]
 		var new_node = StateNode.instance()
 		new_node.theme.get_stylebox("focus", "FlowChartNode").border_color = editor_accent_color
 		new_node.name = state_key # Set before add_node to let engine handle duplicate name
-		add_node(new_node)
+		add_node(layer, new_node)
 		# Set after add_node to make sure UIs are initialized
 		new_node.state = state
 		new_node.state.name = state_key
 		new_node.rect_position = state.graph_offset
-	for state_key in current_layer.state_machine.states.keys():
-		var from_transitions = current_layer.state_machine.transitions.get(state_key)
+	for state_key in layer.state_machine.states.keys():
+		var from_transitions = layer.state_machine.transitions.get(state_key)
 		if from_transitions:
 			for transition in from_transitions.values():
-				connect_node(transition.from, transition.to)
-				current_layer._connections[transition.from][transition.to].line.transition = transition
+				connect_node(layer, transition.from, transition.to)
+				layer._connections[transition.from][transition.to].line.transition = transition
 	update()
 	unsaved_indicator.text = "" # Draw graph is not action by user
 
@@ -384,83 +505,83 @@ func _on_layer_deselected(layer):
 	if layer:
 		layer.hide_content()
 
-func _on_node_dragged(node, dragged):
+func _on_node_dragged(layer, node, dragged):
 	node.state.graph_offset = node.rect_position
 	_on_edited()
 
-func _on_node_added(new_node):
+func _on_node_added(layer, new_node):
 	new_node.undo_redo = undo_redo
 	new_node.state.name = new_node.name
 	new_node.state.graph_offset = new_node.rect_position
 	new_node.connect("name_edit_entered", self, "_on_node_name_edit_entered", [new_node])
 	new_node.connect("gui_input", self, "_on_state_node_gui_input", [new_node])
-	current_layer.state_machine.add_state(new_node.state)
+	layer.state_machine.add_state(new_node.state)
 	check_has_entry()
 	check_has_exit()
 	_on_edited()
 
-func _on_node_removed(node_name):
+func _on_node_removed(layer, node_name):
 	var path = str(path_viewer.get_cwd(), "/", node_name)
-	var layer = get_layer(path)
-	if layer:
+	var layer_to_remove = get_layer(path)
+	if layer_to_remove:
 		# Remove root's direct children layers
 		layer.queue_free()
-	var result = current_layer.state_machine.remove_state(node_name)
+	var result = layer.state_machine.remove_state(node_name)
 	check_has_entry()
 	check_has_exit()
 	_on_edited()
 	return result
 
-func _on_node_connected(from, to):
+func _on_node_connected(layer, from, to):
 	if _reconnecting_connection:
 		# Reconnection will trigger _on_node_connected after _on_node_reconnect_end/_on_node_reconnect_failed
 		if _reconnecting_connection.from_node.name == from and _reconnecting_connection.to_node.name == to:
 			_reconnecting_connection = null
 			return
-	if current_layer.state_machine.transitions.has(from):
-		if current_layer.state_machine.transitions[from].has(to):
+	if layer.state_machine.transitions.has(from):
+		if layer.state_machine.transitions[from].has(to):
 			return # Already existed as it is loaded from file
 
-	var line = current_layer._connections[from][to].line
+	var line = layer._connections[from][to].line
 	var new_transition = Transition.new(from, to)
 	line.transition = new_transition
-	current_layer.state_machine.add_transition(new_transition)
+	layer.state_machine.add_transition(new_transition)
 	clear_selection()
 	select(line)
 	_on_edited()
 
-func _on_node_disconnected(from, to):
-	current_layer.state_machine.remove_transition(from, to)
+func _on_node_disconnected(layer, from, to):
+	layer.state_machine.remove_transition(from, to)
 	_on_edited()
 
-func _on_node_reconnect_begin(from, to):
-	_reconnecting_connection = current_layer._connections[from][to]
-	current_layer.state_machine.remove_transition(from, to)
+func _on_node_reconnect_begin(layer, from, to):
+	_reconnecting_connection = layer._connections[from][to]
+	layer.state_machine.remove_transition(from, to)
 
-func _on_node_reconnect_end(from, to):
+func _on_node_reconnect_end(layer, from, to):
 	var transition = _reconnecting_connection.line.transition
 	transition.to = to
-	current_layer.state_machine.add_transition(transition)
+	layer.state_machine.add_transition(transition)
 	clear_selection()
 	select(_reconnecting_connection.line)
 
-func _on_node_reconnect_failed(from, to):
+func _on_node_reconnect_failed(layer, from, to):
 	var transition = _reconnecting_connection.line.transition
-	current_layer.state_machine.add_transition(transition)
+	layer.state_machine.add_transition(transition)
 	clear_selection()
 	select(_reconnecting_connection.line)
 
-func _request_connect_from(from):
+func _request_connect_from(layer, from):
 	if from == State.EXIT_STATE:
 		return false
 	return true
 
-func _request_connect_to(to):
+func _request_connect_to(layer, to):
 	if to == State.ENTRY_STATE:
 		return false
 	return true
 
-func _on_duplicated(old_nodes, new_nodes):
+func _on_duplicated(layer, old_nodes, new_nodes):
 	# Duplicate condition as well
 	for i in old_nodes.size():
 		var from_node = old_nodes[i]
@@ -469,8 +590,8 @@ func _on_duplicated(old_nodes, new_nodes):
 				for j in old_nodes.size():
 					var to_node = old_nodes[j]
 					if to_node.name == connection_pair.to:
-						var old_connection = current_layer._connections[connection_pair.from][connection_pair.to]
-						var new_connection = current_layer._connections[new_nodes[i].name][new_nodes[j].name]
+						var old_connection = layer._connections[connection_pair.from][connection_pair.to]
+						var new_connection = layer._connections[new_nodes[i].name][new_nodes[j].name]
 						for condition in old_connection.line.transition.conditions.values():
 							new_connection.line.transition.add_condition(condition.duplicate())
 	_on_edited()
@@ -486,7 +607,7 @@ func _on_node_name_edit_entered(new_name, node):
 		return
 
 	if current_layer.state_machine.change_state_name(old, new):
-		rename_node(node.name, new)
+		rename_node(current_layer, node.name, new)
 		node.name = new
 		# Rename layer as well
 		var path = str(path_viewer.get_cwd(), "/", node.name)
@@ -504,6 +625,46 @@ func _on_node_name_edit_entered(new_name, node):
 func _on_edited():
 	unsaved_indicator.text = "*"
 
+func _on_remote_transited(from, to):
+	var from_dir = StateDirectory.new(from)
+	var to_dir = StateDirectory.new(to)
+	var focused_layer = get_focused_layer(from)
+	if from:
+		if focused_layer:
+			focused_layer.debug_transit_out(from, to)
+	if to:
+		if from_dir.is_nested() and from_dir.is_exit():
+			if focused_layer:
+				var path = path_viewer.back()
+				select_layer(get_layer(path))
+		elif to_dir.is_nested():
+			if to_dir.is_entry() and focused_layer:
+			# Open into next layer
+				to_dir.goto(to_dir.get_end_index())
+				to_dir.back()
+				var node = focused_layer.content_nodes.get_node_or_null(to_dir.get_current_end())
+				if node:
+					var layer = create_layer(node)
+					select_layer(layer)
+		# In case where, "from" state is nested yet not an exit state,
+		# while "to" state is on different level, then jump to destination layer directly.
+		# This happens when StateMachinePlayer transit to state that existing in the stack,
+		# which trigger StackPlayer.reset() and cause multiple states removed from stack within one frame
+		elif from_dir.is_nested() and not from_dir.is_exit():
+			if to_dir._dirs.size() != from_dir._dirs.size():
+				to_dir.goto(to_dir.get_end_index())
+				var n = to_dir.back()
+				if not n:
+					n = "root"
+				var layer = get_layer(n)
+				path_viewer.select_dir(layer.name)
+				select_layer(layer)
+
+		focused_layer = get_focused_layer(to)
+		if not focused_layer:
+			focused_layer = open_layer(to)
+		focused_layer.debug_transit_in(from, to)
+
 # Return if current editing StateMachine can be saved, ignore built-in resource
 func can_save():
 	if not state_machine:
@@ -515,6 +676,12 @@ func can_save():
 		return false
 	return true
 
+func set_debug_mode(v):
+	if debug_mode != v:
+		debug_mode = v
+		_on_debug_mode_changed(v)
+		emit_signal("debug_mode_changed", debug_mode)
+
 func set_state_machine_player(smp):
 	if state_machine_player != smp:
 		state_machine_player = smp
@@ -524,3 +691,10 @@ func set_state_machine(sm):
 	if state_machine != sm:
 		state_machine = sm
 		_on_state_machine_changed(sm)
+
+func set_current_state(v):
+	if _current_state != v:
+		var from = _current_state
+		var to = v
+		_current_state = v
+		_on_remote_transited(from, to)

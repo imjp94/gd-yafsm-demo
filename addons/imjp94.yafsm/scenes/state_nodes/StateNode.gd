@@ -11,10 +11,8 @@ var undo_redo
 
 var state setget set_state
 
-var _to_free
 
 func _init():
-	_to_free = []
 	set_state(State.new("State"))
 
 func _ready():
@@ -37,7 +35,7 @@ func _input(event):
 		if event.pressed:
 			# Detect click outside rect
 			if get_focus_owner() == name_edit:
-				var local_event = name_edit.make_input_local(event)
+				var local_event = make_input_local(event)
 				if not name_edit.get_rect().has_point(local_event.position):
 					name_edit.release_focus()
 

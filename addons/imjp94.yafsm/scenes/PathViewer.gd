@@ -1,15 +1,28 @@
 tool
 extends HBoxContainer
 
-signal dir_pressed(path, index)
+signal dir_pressed(dir, index)
 
 
 func _init():
 	add_dir("root")
 
+# Select parent dir & return its path
+func back():
+	return select_dir(get_child(max(get_child_count()-1 - 1, 0)).name)
+
+# Select dir & return its path
+func select_dir(dir):
+	for i in get_child_count():
+		var child = get_child(i)
+		if child.name == dir:
+			remove_dir_until(i)
+			return get_dir_until(i)
+
 # Add directory button
 func add_dir(dir):
 	var button = Button.new()
+	button.name = dir
 	button.flat = true
 	button.text = dir
 	add_child(button)
@@ -26,6 +39,7 @@ func remove_dir_until(index):
 		to_remove.append(child)
 	for n in to_remove:
 		remove_child(n)
+		n.queue_free()
 
 # Return current working directory
 func get_cwd():
@@ -46,5 +60,5 @@ func get_dir_until(index):
 
 func _on_button_pressed(button):
 	var index = button.get_index()
-	var path = get_dir_until(index)
-	emit_signal("dir_pressed", path, index)
+	var dir = button.name
+	emit_signal("dir_pressed", dir, index)
