@@ -23,6 +23,7 @@ func setup_level():
 		if level_scn:
 			# New level instance
 			current_level_instance = level_scn.instance()
+			app_state.erase_param("Game/level_scn")
 			if last_level:
 				app_state.erase_param("last_level", false) # Remove last level, since we're starting new level
 				last_level.queue_free() # IMPORTANT: Must be freed, otherwise it will cause memory leak
