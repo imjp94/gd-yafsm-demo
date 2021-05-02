@@ -98,11 +98,16 @@ func _process(delta):
 	if not debug_mode:
 		set_process(false)
 		return
-	if not state_machine_player:
+	if not is_instance_valid(state_machine_player):
 		set_process(false)
 		set_debug_mode(false)
 		return
 	var stack = state_machine_player.get("Members/StackPlayer.gd/stack")
+	if not stack:
+		set_process(false)
+		set_debug_mode(false)
+		return
+
 	if stack.size() == 1:
 		set_current_state(state_machine_player.get("Members/StackPlayer.gd/current"))
 	else:
@@ -154,11 +159,12 @@ func _on_path_viewer_dir_pressed(dir, index):
 		var end_state_parent_path = StateMachinePlayer.path_backward(_last_path)
 		var end_state_name = StateMachinePlayer.path_end_dir(_last_path)
 		var layer = content.get_node_or_null(end_state_parent_path)
-		var node = layer.content_nodes.get_node_or_null(end_state_name)
-		if layer and node:
-			if not node.state.states:
-				# Convert state machine node back to state node
-				convert_to_state(layer, node)
+		if layer:
+			var node = layer.content_nodes.get_node_or_null(end_state_name)
+			if node:
+				if not node.state.states:
+					# Convert state machine node back to state node
+					convert_to_state(layer, node)
 
 	_last_index = index
 	_last_path = path
@@ -524,8 +530,8 @@ func _on_node_removed(layer, node_name):
 	var path = str(path_viewer.get_cwd(), "/", node_name)
 	var layer_to_remove = get_layer(path)
 	if layer_to_remove:
-		# Remove root's direct children layers
-		layer.queue_free()
+		layer_to_remove.get_parent().remove_child(layer_to_remove)
+		layer_to_remove.queue_free()
 	var result = layer.state_machine.remove_state(node_name)
 	check_has_entry()
 	check_has_exit()
