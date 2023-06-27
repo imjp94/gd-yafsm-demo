@@ -25,4 +25,4 @@ script = ExtResource( 2 )
 state_machine = ExtResource( 4 )
 active = true
 autostart = true
-process_mode = 1
+update_process_mode = 1

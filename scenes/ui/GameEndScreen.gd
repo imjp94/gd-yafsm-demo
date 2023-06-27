@@ -1,6 +1,6 @@
 extends "res://scenes/ui/BaseUI.gd"
 
-onready var title = $PanelContainer/CenterContainer/VBoxContainer/Label
+@onready var title = $PanelContainer/CenterContainer/VBoxContainer/Label
 
 func _ready():
 	if app_state:

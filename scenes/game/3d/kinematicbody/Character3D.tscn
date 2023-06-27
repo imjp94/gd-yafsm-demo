@@ -1,30 +1,28 @@
-[gd_scene load_steps=6 format=2]
+[gd_scene load_steps=7 format=3 uid="uid://dqo0p6bo3sf66"]
 
-[ext_resource path="res://addons/imjp94.yafsm/src/StateMachinePlayer.gd" type="Script" id=1]
-[ext_resource path="res://scenes/game/3d/kinematicbody/Character3D.gd" type="Script" id=2]
-[ext_resource path="res://scenes/game/3d/kinematicbody/Character_statemachine.tres" type="Resource" id=3]
+[ext_resource type="Script" path="res://addons/imjp94.yafsm/src/StateMachinePlayer.gd" id="1"]
+[ext_resource type="Script" path="res://scenes/game/3d/kinematicbody/Character3D.gd" id="2"]
+[ext_resource type="Resource" uid="uid://colhkv1wf42el" path="res://scenes/game/3d/kinematicbody/Character_statemachine.tres" id="3"]
 
+[sub_resource type="CapsuleMesh" id="1"]
 
-[sub_resource type="CapsuleMesh" id=1]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8pt3r"]
+albedo_color = Color(0.34902, 0.505882, 0.709804, 1)
 
-[sub_resource type="CapsuleShape" id=2]
+[sub_resource type="CapsuleShape3D" id="2"]
 
-[node name="Character3D" type="KinematicBody"]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0 )
-script = ExtResource( 2 )
+[node name="Character3D" type="CharacterBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+script = ExtResource("2")
 
-[node name="MeshInstance" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0 )
-mesh = SubResource( 1 )
-material/0 = null
+[node name="MeshInstance" type="MeshInstance3D" parent="."]
+mesh = SubResource("1")
+surface_material_override/0 = SubResource("StandardMaterial3D_8pt3r")
 
-[node name="CollisionShape" type="CollisionShape" parent="."]
-transform = Transform( 1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0 )
-shape = SubResource( 2 )
+[node name="CollisionShape" type="CollisionShape3D" parent="."]
+shape = SubResource("2")
 
 [node name="StateMachinePlayer" type="Node" parent="."]
-script = ExtResource( 1 )
-state_machine = ExtResource( 3 )
-active = true
-autostart = true
-process_mode = 0
+script = ExtResource("1")
+state_machine = ExtResource("3")
+update_process_mode = 0

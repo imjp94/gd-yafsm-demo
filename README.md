@@ -37,17 +37,17 @@ func _on_AppState_transited(from, to):
     var next_scene
     match to_dir.next():
         "SplashScreen":
-            next_scene = splash_screen_scn.instance()
+            next_scene = splash_screen_scn.instantiate()
         "StartScreen":
-            next_scene = start_screen_scn.instance()
+            next_scene = start_screen_scn.instantiate()
         "MainMenu":
-            next_scene = main_menu_scn.instance()
+            next_scene = main_menu_scn.instantiate()
         "LevelSelect":
-            next_scene = level_select_scn.instance()
+            next_scene = level_select_scn.instantiate()
         "Game":
             match to_dir.next(): # Match nested state
                 "Entry": # Game/Entry
-                    next_scene = game_scn.instance()
+                    next_scene = game_scn.instantiate()
         "Exit":
             get_tree().quit()
     if next_scene:
@@ -101,7 +101,7 @@ func _on_AppState_transited(from, to):
             match to_dir.next():
                 "Pause": # Game/Pause
                     if not pause_menu_instance:
-                        pause_menu_instance = pause_menu_scn.instance()
+                        pause_menu_instance = pause_menu_scn.instantiate()
                         pause_menu_instance.set("app_state", app_state)
                         ......
                     add_child(pause_menu_instance)
