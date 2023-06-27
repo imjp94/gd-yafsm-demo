@@ -1,5 +1,10 @@
 extends "BaseUI.gd"
 
+@onready var continue_btn = $"%Continue"
+
+
+func _ready():
+	continue_btn.grab_focus()
 
 func _unhandled_key_input(event):
 	if event.is_action_pressed("ui_cancel"):

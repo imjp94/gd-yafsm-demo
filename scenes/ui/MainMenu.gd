@@ -1,5 +1,10 @@
 extends "BaseUI.gd"
 
+@onready var start_game_btn = $"%StartGame"
+
+
+func _ready():
+	start_game_btn.grab_focus()
 
 func _on_StartGame_pressed():
 	if app_state:

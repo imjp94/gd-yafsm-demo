@@ -2,13 +2,13 @@ extends Node
 
 const StateDirectory = preload("addons/imjp94.yafsm/src/StateDirectory.gd")
 
-export(PackedScene) var splash_screen_scn
-export(PackedScene) var start_screen_scn
-export(PackedScene) var main_menu_scn
-export(PackedScene) var level_select_scn
-export(PackedScene) var game_scn
+@export var splash_screen_scn: PackedScene
+@export var start_screen_scn: PackedScene
+@export var main_menu_scn: PackedScene
+@export var level_select_scn: PackedScene
+@export var game_scn: PackedScene
 
-onready var app_state = $AppState
+@onready var app_state = $AppState
 
 
 func _on_AppState_transited(from, to):
@@ -31,17 +31,17 @@ func _on_AppState_transited(from, to):
 	var next_scene
 	match to_dir.next():
 		"SplashScreen":
-			next_scene = splash_screen_scn.instance()
+			next_scene = splash_screen_scn.instantiate()
 		"StartScreen":
-			next_scene = start_screen_scn.instance()
+			next_scene = start_screen_scn.instantiate()
 		"MainMenu":
-			next_scene = main_menu_scn.instance()
+			next_scene = main_menu_scn.instantiate()
 		"LevelSelect":
-			next_scene = level_select_scn.instance()
+			next_scene = level_select_scn.instantiate()
 		"Game":
 			match to_dir.next(): # Match nested state
 				"Entry": # Game/Entry
-					next_scene = game_scn.instance()
+					next_scene = game_scn.instantiate()
 		"Exit":
 			get_tree().quit()
 	if next_scene:

@@ -1,15 +1,15 @@
 extends Control
 
-export(NodePath) var stack_player_np
-export var offset = Vector2.ZERO
+@export var stack_player_np: NodePath
+@export var offset = Vector2.ZERO
 
 var label = Label.new()
 var stack_player
 
 
 func _init():
-	label.align = HALIGN_CENTER
-	label.valign = VALIGN_CENTER
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.size_flags_vertical = SIZE_SHRINK_CENTER
 	add_child(label)
 
@@ -17,7 +17,7 @@ func _ready():
 	stack_player = get_node_or_null(stack_player_np)
 
 func _process(delta):
-	if Engine.editor_hint:
+	if Engine.is_editor_hint:
 		return
 
 	if stack_player:
